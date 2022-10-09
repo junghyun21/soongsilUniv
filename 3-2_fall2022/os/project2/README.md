@@ -88,7 +88,7 @@
     - xv6가 실행될 때 memsizetest.c도 컴파일이 될 수 있도록 Makefile 수정 필요
 - [source](https://github.com/junghyun21/soongsilUniv/tree/main/3-2_fall2022/os/project2/sys_memsize)
     
-    ![실행결과](.source/memsize.png)
+    ![실행결과](./source/memsize.png)
 
 <br>
 <br>
