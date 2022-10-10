@@ -12,6 +12,9 @@
 - trace 시스템 콜 추가 및 이를 호출하는 간단한 쉘 프로그램 구현
 
 <br>
+<br>
+
+## 기본 지식
 
 > 시스템 콜이 호출되는 방법
 
@@ -68,8 +71,11 @@
 
 
 <br>
+<br>
 
-> memsize()
+## memsize 시스템 콜
+
+> memsize() 구현
 
 - 호출한 프로세스의 메모리 사용량을 출력
 - 기존 코드 수정 필요
@@ -78,13 +84,18 @@
     - `syscall.c`: 시스템 콜 구현에 대한 포인터 및 extern 함수 추가
     - `syscall.h`: 시스템 콜과 번호 mapping 추가
     - `sysproc.c`: memsize 시스템 콜 구현 코드 추가
+- memsizetest라는 쉘 프로그램 구현 통해 memsize()의 실행 결과 확인
+    - xv6가 실행될 때 memsizetest.c도 컴파일이 될 수 있도록 Makefile 수정 필요
 - [source](https://github.com/junghyun21/soongsilUniv/tree/main/3-2_fall2022/os/project2/sys_memsize)
     
-    ![실행결과](https://github.com/junghyun21/soongsilUniv/tree/main/3-2_fall2022/os/project2/source/memsize.png)
+    ![실행결과](./source/memsize.png)
 
 <br>
+<br>
 
-> trace()
+## trace 시스템 콜
+
+> trace() 구현
 
 - 인자로 받은 시스템 콜을 추적함으로써 디버깅 시 도움을 줌
 - 추적할 시스템 콜을 지정하는 정수 [mask]를 인자로 받음
@@ -105,6 +116,11 @@
     - `syscall.h`: 시스템 콜과 번호 mapping 추가
     - `sysproc.c`: trace 시스템 콜 구현 코드 추가
     → 마스크 값을 인자로 받고, 호출한 프로세스의 마스크 값을 설정
+- ssu_trace 라는 쉘 프로그램 구현 통해 trace()의 실행결과 확인
+    - `ssu_trace [mask] [command]`
+        - [mask]: 시스템 콜을 추적하기 위한 비트 집합
+        - [command]: 해당 명령어가 호출하는 시스템 콜을 추적
+    - xv6가 실행될 때 ssu_trace.c도 컴파일이 될 수 있도록 Makefile 수정 필요
 - [source](https://github.com/junghyun21/soongsilUniv/tree/main/3-2_fall2022/os/project2/sys_trace)
     
-    ![실행결과](https://github.com/junghyun21/soongsilUniv/tree/main/3-2_fall2022/os/project2/source/trace.png)
+    ![실행결과](./source/trace.png)
