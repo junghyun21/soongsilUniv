@@ -1,0 +1,103 @@
+digit			[0-9]
+letter 			[a-zA-Z_]
+delim			[ \t]
+line			[\n]
+ws				{delim}+
+
+%{
+#include "y.tab.h"
+#include <string.h>
+extern int yylval;
+extern int line_no;
+int makeString();
+int checkIdentifier();
+%}
+
+%%
+{ws}			{ }
+{line}			{line_no++;}
+auto			{return(AUTO_SYM);}
+break			{return(BREAK_SYM);}
+case 			{return(CASE_SYM);}
+const			{return(CONST_SYM);}
+continue		{return(CONTINUE_SYM);}
+default			{return(DEFAULT_SYM);}
+do			{return(DO_SYM);}
+else			{return(ELSE_SYM);}
+enum			{return(ENUM_SYM);}
+extern			{return(EXTERN_SYM);}
+for			{return(FOR_SYM);}
+goto			{return(GOTO_SYM);}
+if 			{return(IF_SYM);}
+register		{return(REGISTER_SYM);}
+return			{return(RETURN_SYM);}
+sizeof			{return(SIZEOF_SYM);}
+static			{return(STATIC_SYM);}
+struct			{return(STRUCT_SYM);}
+switch			{return(SWITCH_SYM);}
+typedef			{return(TYPEDEF_SYM);}
+union			{return(UNION_SYM);}
+volatile		{return(VOLATILE_SYM);}
+while			{return(WHILE_SYM);}
+"\+\+"			{return(PLUSPLUS);}
+"\-\-"			{return(MINUSMINUS);}
+"\-\>"			{return(ARROW);}
+"\<"			{return(LSS);}
+"\>"			{return(GTR);}
+"\<\="			{return(LEQ);}
+"\>\="			{return(GEQ);}
+"\=\="			{return(EQL);}
+"\!\="			{return(NEQ);}
+"\&\&"			{return(AMPAMP);}
+"\|\|"			{return(BARBAR);}
+"\.\.\."		{return(DOTDOTDOT);}
+"\("			{return(LP);}
+"\)"			{return(RP);}
+"\["			{return(LB);}
+"\]"			{return(RB);}
+"\{"			{return(LR);}
+"\}"			{return(RR);}
+"\:"			{return(COLON);}
+"\."			{return(PERIOD);}
+"\!"			{return(EXCL);}
+"\*"			{return(STAR);}
+"\/"			{return(SLASH);}
+"\%"			{return(PERCENT);}
+"\&"			{return(AMP);}
+"\;"			{return(SEMICOLON);}
+"\+"			{return(PLUS);}
+"\-"			{return(MINUS);}
+"\="			{return(ASSIGN);}
+"\&"			{return(AND);}
+"\^"			{return(XOR);}
+"\|"			{return(OR);}
+"\?"			{return(QUEST);}
+{digit}+			{yylval = atoi(yytext); return(INTEGER_CONSTANT);}
+{digit}*\.{digit}*		{yylval = makeString(yytext); return(FLOAT_CONSTANT);}
+{letter}({letter}|{digit})*	{return(checkIdentifier(yytext));}
+\"([^"\n]|\\["\n])*\"		{yylval = makeString(yytext); return(STRING_LITERAL);}
+\'([^'\n]|\\\')\'		{yylval = *(yytext+1); return(CHARACTER_CONSTANT);}
+"\/\*"([^\*\/]|[^\*]"\/"|"\*"[^\/])*"\*\/"	{ }
+"\/\/"[^\n]*				{ }
+%%
+
+int makeString(char *s)
+{
+	char *t;
+	t = malloc(strlen(s) + 1);
+	strcpy(t,s);
+	return((unsigned long int)t);
+}
+
+int checkIdentifier(char *s)
+{
+	char *table[] = {"int", "float", "char", "void"};
+
+	for (int i = 0; i < sizeof(table)/ sizeof(table[0]); i++) {
+		if (strcmp(table[i], s) == 0)
+			return(TYPE_IDENTIFIER);
+	}
+
+	makeString(s);
+	return(IDENTIFIER);
+}
