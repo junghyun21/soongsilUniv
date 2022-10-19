@@ -71,7 +71,7 @@ SSU Scheduler를 구현하기 위해서 `proc.h`, `proc.c`, `defs.h` 수정 필�
 - `defs.h`
     - [source](https://github.com/mit-pdos/xv6-public/blob/master/defs.h)
     - 추가한 함수들의 선언부 추가
-- [source](https://github.com/junghyun21/soongsilUniv/tree/main/3-2_fall2022/os/project3/proc.c)
+- [SSU Scheduler](https://github.com/junghyun21/soongsilUniv/blob/fb4cbfbbd3ed5ee96332597f37dfba1491c08f7f/3-2_fall2022/os/project3/proc.c#L30)
 
 
 <br>
@@ -88,7 +88,7 @@ SSU Scheduler를 구현하기 위해서 `proc.h`, `proc.c`, `defs.h` 수정 필�
     - 지정한 시간(TOTAL_COUNTER)이 흐르면 해당 프로세스를 종료
 - sdebug 명령어를 통해 생성된 프로세스에게 가중치를 부여하기 위해서는 시스템 콜인 `weightset()`도 구현 필수
 - xv6가 실행될 때 sdebug.c도 컴파일이 될 수 있도록 Makefile 수정 필요
-- [source](https://github.com/junghyun21/soongsilUniv/tree/main/3-2_fall2022/os/project3/sdebug.c)
+- [source](https://github.com/junghyun21/soongsilUniv/blob/main/3-2_fall2022/os/project3/sdebug.c)
     
 <br>
 
@@ -107,8 +107,8 @@ SSU Scheduler를 구현하기 위해서 `proc.h`, `proc.c`, `defs.h` 수정 필�
     - `proc.c`: sys_weightset() 시스템 콜을 위한 커널 함수인 weightset()의 정의부 추가
     - `defs.h`: weightset()의 선언부 추가
 - source
-    - 시스템 콜: [sys_weightset()](https://github.com/junghyun21/soongsilUniv/tree/main/3-2_fall2022/os/project3/sysproc.c)
-    - 커널 함수: [weightset()]([sys_weightset()](https://github.com/junghyun21/soongsilUniv/tree/main/3-2_fall2022/os/project3/proc.c))
+    - 시스템 콜: [sys_weightset()](https://github.com/junghyun21/soongsilUniv/blob/fb4cbfbbd3ed5ee96332597f37dfba1491c08f7f/3-2_fall2022/os/project3/sysproc.c#L93)
+    - 커널 함수: [weightset()](https://github.com/junghyun21/soongsilUniv/blob/fb4cbfbbd3ed5ee96332597f37dfba1491c08f7f/3-2_fall2022/os/project3/proc.c#L675)
 
 ![실행결과](./src/sdebug.png)
 
@@ -128,8 +128,8 @@ SSU Scheduler를 구현하기 위해서 `proc.h`, `proc.c`, `defs.h` 수정 필�
         - 프로세스 가중치
         - 프로세스 우선순위
 - 기존 코드 수정 필요
-    - `proc.c`: [source](https://github.com/junghyun21/soongsilUniv/tree/main/3-2_fall2022/os/project3/proc.c)
-    - `Makefile`: [source](https://github.com/junghyun21/soongsilUniv/tree/main/3-2_fall2022/os/project3/Makefile)
+    - `proc.c`: [source](https://github.com/junghyun21/soongsilUniv/blob/fb4cbfbbd3ed5ee96332597f37dfba1491c08f7f/3-2_fall2022/os/project3/proc.c#L65)
+    - `Makefile`: [source](https://github.com/junghyun21/soongsilUniv/blob/fb4cbfbbd3ed5ee96332597f37dfba1491c08f7f/3-2_fall2022/os/project3/Makefile#L93s)
 
 ![실행결과](./src/debug_1.png)
 ![실행결과](./src/debug_2.png)
