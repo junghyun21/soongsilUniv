@@ -17,14 +17,20 @@
 > 결과 화면
 1. port 4000에 서버 오픈
 ![openServer](./src/server_openServer.png)
+
 2. client가 server에 접속
+
 - client 화면
 ![client_connect](./src/client_connect.png)
+
 - server 화면
 ![server_connect](./src/server_connect.png)
+
 3. client와 server 간의 대화
+
 - client 화면
 ![client_chat](./src/client_chat.png)
+
 - server 화면
 ![server_chat](./src/server_chat.png)
 
