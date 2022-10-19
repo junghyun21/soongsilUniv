@@ -12,10 +12,11 @@
 
 int weight = 1; // weight(가중치) 변수 선언
 
+// ptable: 구조체를 딱 한 번만 선언해서 사용함 -> 전역변수 느낌
 struct {
   struct spinlock lock;
   struct proc proc[NPROC]; // NPPROC: 프로세스의 최대 개수
-  long min_priority; // 프로세스의 독점을 막기 위해 우선순위 값 중 가장 작은 값 저장
+  long long min_priority; // 프로세스의 독점을 막기 위해 우선순위 값 중 가장 작은 값 저장
 } ptable;
 
 static struct proc *initproc;
@@ -26,16 +27,17 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
-// ssu_scheduler 부분
+// 과제 3-1: ssu_scheduler
 // 기존의 scheduler를 수정하여서 구현
+// main.c에서 호출
+// 스케줄러는 처음 호출이 된 후, 종료되지 않고 무한반복되며 사용됨
 void scheduler(void)
 {
   struct proc *p;
-  struct proc *running_p = NULL;
+  struct proc *running_p;
   struct cpu *c = mycpu();
-  long min;
   c->proc = 0;
-  
+
   // ssu_scheduler 또한 처음 호출된 후, 종료되지 않고 무한반복 되며 사용됨
   // 프로세스 실행이 시작될 때 호출
   for(;;){
@@ -43,9 +45,9 @@ void scheduler(void)
 
     acquire(&ptable.lock);
 
-    min = ptable.proc[0]->priority; // 가장 작은 값의 우선순위를 저장하기 위한 공간
+    running_p = NULL;
 
-    // 실행시킬 process를 찾기 위해 process table 탐색하며 loop 진행
+    // 실행시킬 process를 찾기 위해 process table 탐색하며 loop 진행 -> 우선순위의 값이 가장 낮은 프로세스 찾기
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     {
       if(p->state != RUNNABLE)
@@ -53,18 +55,18 @@ void scheduler(void)
         continue;
       }
 
-      if(p->priority < min)
+      if(running_p == NULL || p->priority < running_p->priority)
       {
-        min = p->priority;
         running_p = p;
       }
+
     }
 
-    // 디버깅 모드로 컴파일 할 때만 실행
-    #ifdef DEBUG
-      if (running_p)
-        cprintf("PID: %d, NAME: %s, WEIGHT: %d, PRIORITY: %d\n", running_p->pid, running_p->name, running_p->weight, running_p->priority);
-    #endif
+// 디버깅 모드로 컴파일 할 때만 실행
+#ifdef DEBUG
+  if (running_p)
+    cprintf("PID: %d, NAME: %s, WEIGHT: %d, PRIORITY: %d\n", running_p->pid, running_p->name, running_p->weight, running_p->priority);
+#endif
 
     if(running_p == NULL)
     {
@@ -79,9 +81,10 @@ void scheduler(void)
     swtch(&(c->scheduler), running_p->context);
     switchkvm();
 
-    ptable.min_priority = update_priority(ptable.proc); // 우선 순위 및 가장 작은 우선순위 값 업데이트
+    update_priority(running_p); // 방금 실행했던 프로세스의 우선순위 업데이트
+    update_min_priority(); // 우선순위 값 중 가장 작은 값 업데이트
 
-    // Process is done running for now.
+    // Process is done running for now
     // It should have changed its p->state before coming back.
     c->proc = 0;
 
@@ -89,29 +92,34 @@ void scheduler(void)
   }
 }
 
-// 스케줄링 함수가 호출될 때마다 우선순위는 새로 업데이트 됨
-// 우선순위 중 가장 작은 값(가장 높은 우선순위) 리턴
-int update_priority(struct proc *proc)
+// 스케줄링 함수가 호출될 때마다 방금 선택받았던 프로세스의 우선순위는 새로 업데이트 됨
+void update_priority(struct proc *proc)
 {
-  int min; 
-  
-  // 우선순위 업데이트
-  for(int i = 0; i < NPROC; ++i)
-  {
-    proc[i]->priority = proc[i]->priority + (TIME_SLICE / proc[i]->weight);
-  }
+  proc->priority = proc->priority + (TIME_SLICE / proc->weight);
+}
 
-  // 가장 작은 우선순위
-  min = proc[0]->priority
-  for(int i = 1; i < NPROC; ++i)
+
+void update_min_priority()
+{
+  struct proc *min = NULL; 
+  struct proc *p;
+
+  // 가장 작은 priority 값 저장 (우선순위가 가장 높은 값)
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
-    if(proc[i]->priority < min)
+    if(p->state == RUNNABLE)
     {
-      min = proc[i]->priority;
+      if(min == NULL || p->priority < min->priority)
+      {
+        min = p;
+      }
     }
   }
 
-  return min;
+  if(min != NULL)
+  {
+    ptable.min_priority = min->priority;
+  }
 }
 
 // 프로세스 생성 또는 wake up시, 우선순위를 0부터 부여하게 되면 해당 프로세스가 독점 실행될 수 있음
@@ -432,7 +440,7 @@ wait(void)
   }
 }
 
-//PAGEBREAK: 42
+// PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
 // Scheduler never returns.  It loops, doing:
@@ -446,6 +454,8 @@ wait(void)
 //   struct proc *p;
 //   struct cpu *c = mycpu();
 //   c->proc = 0;
+
+//   cprintf("start scheduler\n");
   
 //   for(;;){
 //     // Enable interrupts on this processor.

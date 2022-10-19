@@ -120,7 +120,8 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
-int             update_priority(struct proc*);
+void            update_priority(struct proc*);
+void            update_min_priority(void);
 void            assign_min_priority(struct proc*);
 void            weightset(int);
 

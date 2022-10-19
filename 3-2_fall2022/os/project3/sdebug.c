@@ -8,9 +8,8 @@
 
 void sdebug_func(void)
 {
-    int n, pid;
-    int weight = 1;
-    long start_ticks, end_ticks, ticks, counter;
+    int n, pid, first, weight;
+    long long start_ticks, end_ticks, counter;
 
     printf(1, "start sdebug command\n");
 
@@ -22,28 +21,22 @@ void sdebug_func(void)
         if(pid < 0)
         {
             printf(1, "fork failed\n");
-            exit();
+            break;
         }
 
         // 자식 processs인 경우
         if(pid == 0)
-        {
-            weightset(weight++); // 현재 생성된 프로세스에게 가중치 부여
+        {     
+            weight = n + 1;
 
-            start_ticks = uptime(); // uptime(): 시작 이후로 clock_tick이 발생한 횟수
-            counter = start_ticks * 10;
+            start_ticks = uptime(); // uptime(): 시작 이후로 clock_tick이 발생한 횟수 
+            first = 1; // 프로세스의 정보 출력은 프로세스 별로 한 번씩만 수행
 
-            int first = 1; // 프로세스의 정보 출력은 프로세스 별로 한 번씩만 수행
+            weightset(weight); // 현재 생성된 프로세스에게 가중치 부여
 
             // 프로세스가 생성된 이후부터 소모할 수 있는 시간
-            while(TOTAL_COUNTER >= counter)
+            for(counter = 0; counter < TOTAL_COUNTER; counter++)
             {
-                
-                end_ticks = uptime();
-                counter = (end_ticks - start_ticks) * 10;
-
-                counter = ticks * 10;
-
                 if(PRINT_CYCLE == counter)
                 {
                     if(first)
@@ -51,38 +44,38 @@ void sdebug_func(void)
                         end_ticks = uptime();
 
                         // 1ticks = 10ms
-                        printf(1, "PID: %d, WEIGHT: %d, TIMES: %dms\n", pid, weight, (end_ticks - start_ticks) * 10);
+                        printf(1, "PID: %d, WEIGHT: %d, TIMES: %dms\n", (int)getpid(), weight, (end_ticks - start_ticks) * 10);
 
                         first = 0;
                     }
                 }
             }
 
-            printf(1, "PID: %d terminated\n", pid);
             exit(); // 현재 프로세스 종료
         }
+    }
 
-        // 부모 process인 경우(자식의 PID 리턴)    
+
+    // wait(): 자식 process가 끝날때까지 기다림
+    // 자식 process가 종료되면 자식의 PID 리턴, 자식이 없으면 -1 리턴
+    for(int i = n; i > 0; --i)
+    {
+        if((pid = wait()) < 0)
+        {
+            printf(1, "wait stopped early\n");
+            exit();
+        }
         else
         {
-            // wait(): 자식 process가 끝날때까지 기다림
-            // 자식 process가 종료되면 자식의 PID 리턴, 자식이 없으면 -1 리턴
-            for(int i = n; i >= 0; --i)
-            {
-                if(wait() < 0)
-                {
-                    printf(1, "wait stopped early\n");
-                    exit();
-                }
-            }
-            
-            // 자식 프로세스가 더 이상 없어야하는데 아직 있는 경우
-            if(wait() != -1)
-            {
-                printf(1, "wait got too many\n");
-                exit();
-            }
+            printf(1, "PID: %d terminated\n", pid);
         }
+    }
+    
+    // 자식 프로세스가 더 이상 없어야하는데 아직 있는 경우
+    if(wait() != -1)
+    {
+        printf(1, "wait got too many\n");
+        exit();
     }
 
     printf(1, "end of sdebug command\n");

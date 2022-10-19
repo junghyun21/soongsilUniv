@@ -50,7 +50,7 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
 
-  int priority;                // 프로세스의 우선순위
+  long long priority;                // 프로세스의 우선순위
   long weight;                 // 프로세스의 가중치
 };
 
