@@ -3,6 +3,7 @@
 #include "page.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define MAX_SELECT_ALGORITHM 3 // 최대 알고리즘 시뮬레이터 선택 개수
 #define PAGE_STRING_CNT 1000 // 페이지 스트링 개수

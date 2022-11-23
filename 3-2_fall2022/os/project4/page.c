@@ -139,7 +139,7 @@ void separte_page_bit(char *esc_page_string, int *esc_page_string_page, char *es
         }
         else
         {
-            esc_page_string_bit[idx] = esc_page_string[i]; // char형 -> int형
+            esc_page_string_page[idx] = esc_page_string[i]; // char형 -> int형
         }
 
     }
