@@ -40,7 +40,6 @@
 ## SSU Scheduler
 
 > SSU Scheduler
-- 다단계 큐 스케줄링(Multilevel Queue Scheduling)과 유사한 형태
 - 우선순위가 높은 프로세스부터 실행되는 방식
     - 각각의 프로세스들이 가중치(weight)와 우선순위(priority)를 가지고 있음
     - 가중치에 의해 우선순위 결정됨
