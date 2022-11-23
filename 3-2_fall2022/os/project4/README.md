@@ -1,4 +1,4 @@
-# [과제 2] Page Replacement Simulator
+# [과제 4] Page Replacement Simulator
 
 > 목표
 
@@ -73,15 +73,18 @@
 - 아무 것도 입력되지 않는 경우는 없다고 가정
 - 마지막 값이 들어온 이후에는 더 이상 공백이 입력되지 않는다고 가정
 - 알고리즘 시뮬레이터 선택 화면
+    
     ![input_algorithm](./src/input_algorithm.png)
     - 알고리즘 선택 개수가 3개가 초과하는 경우 다시 값을 입력 받도록 함
     - 주어진 보기 외의 다른 값이 입력된 경우 다시 값을 입력 받도록 함
     - 중복되는 값의 입력을 허용함
     - (8)All 은 단독으로만 입력되도록 함
 - 페이지 프레임 개수 선택
+    
     ![input_frame](./src/input_frame.png)
     - 허용 범위인 3 ~ 10을 벗어난 값이 입력된 경우 다시 값을 입력 받도록 함
 - 페이지 스트링 입력 방식 선택
+    
     ![input_pageString](./src/input_pageString.png)
     - (1)랜덤하게 생성: 프로그램이 실행될 때마다 랜덤함수를 통해 프로그램 내부에서 페이지 스트링 생성
     - (2)사용자 생성 파일 오픈: 미리 생성해둔 페이지 스트링 파일 오픈하여 입력
@@ -93,12 +96,14 @@
 
 - 각각의 알고리즘 수행 결과 값은 표준 출력과 동시에 파일에 저장함
 - 표준 출력
+
     ![result_printf](./src/result_printf.png)
     - 각각의 알고리즘에서 입력된 page string
     - 입력된 string 값
     - page fault 발생 여부
     - page string 값이 입력될 때마다 달라지는 frame 모습
 - 파일 저장
+
     ![result_file](./src/result_file.png)
     - 파일명은 result_[알고리즘명].txt로 설정
     - 입력된 string 값
