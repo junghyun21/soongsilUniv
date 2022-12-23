@@ -93,14 +93,16 @@ bget(uint dev, uint blockno)
 }
 
 // Return a locked buf with the contents of the indicated block.
+// 디스크 섹터를 읽고 해당 버퍼 리턴
 struct buf*
 bread(uint dev, uint blockno)
 {
   struct buf *b;
 
   b = bget(dev, blockno);
+  // 버퍼가 이전에 디스크로부터 읽은 적이 있으면
   if((b->flags & B_VALID) == 0) {
-    iderw(b);
+    iderw(b); // 버퍼를 디스크와 동기화
   }
   return b;
 }

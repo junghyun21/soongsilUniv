@@ -10,6 +10,7 @@ struct file {
 
 
 // in-memory copy of an inode
+// 디스크에 저장되지 않는 부가 정보도 포함함 -> ref, vaild, ...
 struct inode {
   uint dev;           // Device number
   uint inum;          // Inode number

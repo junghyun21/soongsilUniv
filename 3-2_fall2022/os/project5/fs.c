@@ -168,17 +168,20 @@ struct {
   struct inode inode[NINODE];
 } icache;
 
+// 자식 프로세스 처음 생성되자마자 실행
+// proc.c 내부의 forkret() 참고
 void
 iinit(int dev)
 {
   int i = 0;
   
+  // spinlock.c 내부에 존재
   initlock(&icache.lock, "icache");
   for(i = 0; i < NINODE; i++) {
     initsleeplock(&icache.inode[i].lock, "inode");
   }
 
-  readsb(dev, &sb);
+  readsb(dev, &sb); // 수퍼블록의 값 읽어옴
   cprintf("sb: size %d nblocks %d ninodes %d nlog %d logstart %d\
  inodestart %d bmap start %d\n", sb.size, sb.nblocks,
           sb.ninodes, sb.nlog, sb.logstart, sb.inodestart,
@@ -191,6 +194,8 @@ static struct inode* iget(uint dev, uint inum);
 // Allocate an inode on device dev.
 // Mark it as allocated by  giving it type type.
 // Returns an unlocked but allocated and referenced inode.
+
+// 장치 '/dev'가 0이 아닌 경우 inode 할당
 struct inode*
 ialloc(uint dev, short type)
 {
@@ -204,7 +209,7 @@ ialloc(uint dev, short type)
     if(dip->type == 0){  // a free inode
       memset(dip, 0, sizeof(*dip));
       dip->type = type;
-      log_write(bp);   // mark it allocated on the disk
+      log_write(bp);   // mark it allocated on the disk -> log.c 내부에 존재
       brelse(bp);
       return iget(dev, inum);
     }
@@ -238,6 +243,11 @@ iupdate(struct inode *ip)
 // Find the inode with number inum on device dev
 // and return the in-memory copy. Does not lock
 // the inode and does not read it from disk.
+
+// 장치 dev에서 숫자가 inum인 inode 찾기
+// cf. 디바이스 파일은 '/dev' 디렉토리 내에 존재
+//     커널은 이 디렉토리에 있는 각 파일을 하드웨어라고 간주함
+//     각각의 디바이스 파일은 mknod()를 통해 생성 가능
 static struct inode*
 iget(uint dev, uint inum)
 {
@@ -249,7 +259,7 @@ iget(uint dev, uint inum)
   empty = 0;
   for(ip = &icache.inode[0]; ip < &icache.inode[NINODE]; ip++){
     if(ip->ref > 0 && ip->dev == dev && ip->inum == inum){
-      ip->ref++;
+      ip->ref++; // iget()은 참조 증가
       release(&icache.lock);
       return ip;
     }
@@ -277,7 +287,7 @@ struct inode*
 idup(struct inode *ip)
 {
   acquire(&icache.lock);
-  ip->ref++;
+  ip->ref++; // 참조 카운터 증가
   release(&icache.lock);
   return ip;
 }
@@ -295,7 +305,10 @@ ilock(struct inode *ip)
 
   acquiresleep(&ip->lock);
 
+  // 이전에 inode가 디스크로부터 데이터를 읽어온 적이 없으면
+  // 디스크에서 inode를 읽고 ip->vaild를 1로 설정 (유효성)
   if(ip->valid == 0){
+    // bread(): bio.c 내부에 존재
     bp = bread(ip->dev, IBLOCK(ip->inum, sb));
     dip = (struct dinode*)bp->data + ip->inum%IPB;
     ip->type = dip->type;
@@ -332,6 +345,7 @@ void
 iput(struct inode *ip)
 {
   acquiresleep(&ip->lock);
+  // 참조 및 링크 수가 0이면 inode 해제
   if(ip->valid && ip->nlink == 0){
     acquire(&icache.lock);
     int r = ip->ref;
@@ -347,7 +361,7 @@ iput(struct inode *ip)
   releasesleep(&ip->lock);
 
   acquire(&icache.lock);
-  ip->ref--;
+  ip->ref--; // iput()은 참조 감소
   release(&icache.lock);
 }
 
@@ -369,19 +383,25 @@ iunlockput(struct inode *ip)
 
 // Return the disk block address of the nth block in inode ip.
 // If there is no such block, bmap allocates one.
+
+// 데이터 블럭 번호(논리)와 디스크 블럭 번호(물리) 맵핑
+// bn: 논리 블록 번호 -> 데이터 블록 번호
 static uint
 bmap(struct inode *ip, uint bn)
 {
   uint addr, *a;
   struct buf *bp;
 
+  // 파일의 크기가 direct block에 저장만 하면 될 정도로 작을 때
   if(bn < NDIRECT){
+    // addr: 디스크에 파일의 내용이 실제로 저장된 디스크 블록의 번호
     if((addr = ip->addrs[bn]) == 0)
       ip->addrs[bn] = addr = balloc(ip->dev);
     return addr;
   }
   bn -= NDIRECT;
 
+  // 파일의 크기가 indirect block을 사용해야할 정도로 클 때
   if(bn < NINDIRECT){
     // Load indirect block, allocating if necessary.
     if((addr = ip->addrs[NDIRECT]) == 0)
@@ -390,7 +410,7 @@ bmap(struct inode *ip, uint bn)
     a = (uint*)bp->data;
     if((addr = a[bn]) == 0){
       a[bn] = addr = balloc(ip->dev);
-      log_write(bp);
+      log_write(bp); // 수정된 블록을 로그에 추가
     }
     brelse(bp);
     return addr;
@@ -478,24 +498,34 @@ readi(struct inode *ip, char *dst, uint off, uint n)
 // PAGEBREAK!
 // Write data to inode.
 // Caller must hold ip->lock.
+
+// ip: 파일에 해당하는 i-node
+// src: 저장할 값 (addr의 값 중 해당하는 값)
+// off: 파일의 오프셋
+// n: 저장할 값의 크기
 int
 writei(struct inode *ip, char *src, uint off, uint n)
 {
   uint tot, m;
   struct buf *bp;
 
+  // 파일의 타입이 Device인 경우
   if(ip->type == T_DEV){
     if(ip->major < 0 || ip->major >= NDEV || !devsw[ip->major].write)
       return -1;
     return devsw[ip->major].write(ip, src, n);
   }
 
+  // 파일의 크기가 offset보다 작거나
+  // offset + 저장될 크기 가 기존 offset보다 작으면
   if(off > ip->size || off + n < off)
     return -1;
+  // 파일 하나의 최대 크기보다 off + 저장될 크기 가 더 크면 에러
   if(off + n > MAXFILE*BSIZE)
     return -1;
 
   for(tot=0; tot<n; tot+=m, off+=m, src+=m){
+    // bmap(): 디스크에 파일의 내용이 실제로 저장된 데이터 블록의 번호 리턴
     bp = bread(ip->dev, bmap(ip, off/BSIZE));
     m = min(n - tot, BSIZE - off%BSIZE);
     memmove(bp->data + off%BSIZE, src, m);
@@ -621,18 +651,31 @@ skipelem(char *path, char *name)
 // If parent != 0, return the inode for the parent and copy the final
 // path element into name, which must have room for DIRSIZ bytes.
 // Must be called inside a transaction since it calls iput().
+
+// path에 대한 inode 찾아서 리턴
 static struct inode*
 namex(char *path, int nameiparent, char *name)
 {
   struct inode *ip, *next;
 
+  // path가 루트(/)인 경우
   if(*path == '/')
+    // ROOTDEV: device number of file system root disk
+    // ROOTINO: root i-number
+    // ROOTDEV에서 숫자가 ROOTINO인 inode 찾기
     ip = iget(ROOTDEV, ROOTINO);
   else
+    // 현재 디렉토리의 inode(myproc()->cwd)의 참조 카운트(ref) 증가
     ip = idup(myproc()->cwd);
 
+  // 위의 디렉토리부터 찾고자하는 파일까지 순서대로 name에 셋팅
+  // ex. a/b/c이면 
+  //      1. name = "a"
+  //      2. name = "b"
+  //      3. name = "c"
+  //      4. name = 0 // 더 이상 제거할 이름이 없음
   while((path = skipelem(path, name)) != 0){
-    ilock(ip);
+    ilock(ip); // inode
     if(ip->type != T_DIR){
       iunlockput(ip);
       return 0;

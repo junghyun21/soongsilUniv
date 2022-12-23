@@ -21,11 +21,12 @@ struct superblock {
   uint bmapstart;    // Block number of first free map block
 };
 
-#define NDIRECT 12
-#define NINDIRECT (BSIZE / sizeof(uint))
-#define MAXFILE (NDIRECT + NINDIRECT)
+#define NDIRECT 12 // direct 블록의 개수
+#define NINDIRECT (BSIZE / sizeof(uint)) // indirect 블록이 가리킬 수 있는 다이렉트 블록의 개수
+#define MAXFILE (NDIRECT + NINDIRECT) // 하나의 파일에서 저장 공간으로 사용할 수 있는 최대 데이터 블록 개수
 
 // On-disk inode structure
+// 디스크에 올라가는 inode 구조
 struct dinode {
   short type;           // File type
   short major;          // Major device number (T_DEV only)

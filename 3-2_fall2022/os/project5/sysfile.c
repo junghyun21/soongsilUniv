@@ -43,6 +43,7 @@ fdalloc(struct file *f)
   int fd;
   struct proc *curproc = myproc();
 
+  // 할당 가능한 파일 디스크립터 탐색
   for(fd = 0; fd < NOFILE; fd++){
     if(curproc->ofile[fd] == 0){
       curproc->ofile[fd] = f;
@@ -85,9 +86,10 @@ sys_write(void)
   int n;
   char *p;
 
+  // write(f, p, n): p에서 n값의 크기만큼 바이트를 읽어서 f에 기술
   if(argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argptr(1, &p, n) < 0)
     return -1;
-  return filewrite(f, p, n);
+  return filewrite(f, p, n); // file.c 내부에 존재
 }
 
 int
@@ -238,6 +240,8 @@ bad:
   return -1;
 }
 
+// 파일 하나당 1개의 i-node 필요함
+// 따라서 파일이 생성될때마다 빈 i-node 할당함
 static struct inode*
 create(char *path, short type, short major, short minor)
 {
@@ -248,15 +252,19 @@ create(char *path, short type, short major, short minor)
     return 0;
   ilock(dp);
 
+  // ?? 원래 똑같은 이름의 파일이 있을 때 새로 만드는 거랑 원래 거 타입이 같냐고 물어보는듯 (몰라)
   if((ip = dirlookup(dp, name, 0)) != 0){
     iunlockput(dp);
     ilock(ip);
     if(type == T_FILE && ip->type == T_FILE)
       return ip;
+    else if(type == T_CS && ip->type == T_CS)
+      return ip;
     iunlockput(ip);
     return 0;
   }
 
+  // ?? 똑같은 이름이 없을 때에는 요구한 타입으로 파일 생성 -> inode 할당
   if((ip = ialloc(dp->dev, type)) == 0)
     panic("create: ialloc");
 
@@ -266,6 +274,7 @@ create(char *path, short type, short major, short minor)
   ip->nlink = 1;
   iupdate(ip);
 
+  // 디렉토리일 때
   if(type == T_DIR){  // Create . and .. entries.
     dp->nlink++;  // for ".."
     iupdate(dp);
@@ -293,15 +302,30 @@ sys_open(void)
   if(argstr(0, &path) < 0 || argint(1, &omode) < 0)
     return -1;
 
-  begin_op();
+  begin_op(); // 각 파일시스템(FS) 시스템 콜이 시작될 때 호출
 
+  // mode가 O_CREATE일 때
+  // path에 기존 파일 시스템의 inode를 생성
   if(omode & O_CREATE){
     ip = create(path, T_FILE, 0, 0);
     if(ip == 0){
       end_op();
       return -1;
     }
-  } else {
+  }
+  // mode가 O_CS일 때
+  // O_CS일때에는 path에 CS 기반 inode 생성
+  else if(omode & O_CS)
+  {
+    ip = create(path, T_CS, 0, 0);
+    if(ip == 0){
+      end_op();
+      return -1;
+    }
+  }
+  // 그 외의 omode -> O_RDONLY, O_WRONLY, O_RDWR
+  else {
+    // inode가 생성되어있지 않은 경우 -> 에러
     if((ip = namei(path)) == 0){
       end_op();
       return -1;
@@ -314,6 +338,8 @@ sys_open(void)
     }
   }
 
+  // 더 이상 파일 테이블에 저장할 공간이 없거나
+  // 파일 디스크립터를 할당받지 못하면
   if((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0){
     if(f)
       fileclose(f);
@@ -322,7 +348,7 @@ sys_open(void)
     return -1;
   }
   iunlock(ip);
-  end_op();
+  end_op(); // 각 파일시스템(FS) 시스템 콜이 끝날 때 호출
 
   f->type = FD_INODE;
   f->ip = ip;
